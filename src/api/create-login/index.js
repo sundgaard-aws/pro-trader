@@ -5,6 +5,7 @@
 
 const { DynamoDB } = require("@aws-sdk/client-dynamodb");
 const UUID = require('uuid');
+const Common = require('../common/common.js');
 
 const MAX_TURNS = 50;
 const LOGIN_TABLE_NAME = "om-pt-login";
@@ -42,7 +43,7 @@ exports.handler = async function(event, context) {
         return respondOK(origin, userData);
     }    
     catch(ex) {
-        console.error(ex); return respondError(origin, 500, "Failed to create login", callback);
+        console.error(ex); return new Common().respondError(origin, 500, "Failed to create login", callback);
     }    
 };
 
@@ -95,55 +96,3 @@ function insertInitialData(userGuid, callback) {
     });    
 }
 
-function tweakOrigin(origin) {
-    var tweakedOrigin = "-";
-    ALLOWED_ORIGINS.forEach(allowedOrigin => {
-        if(allowedOrigin == origin) tweakedOrigin = origin;
-    });
-    return tweakedOrigin;
-}
-
-function preFlightResponse(origin, referer) {
-    var tweakedOrigin = "";
-    if(origin == ALLOWED_ORIGINS[0] || origin == ALLOWED_ORIGINS[1])
-        tweakedOrigin = origin;
-
-    const response = {
-        statusCode: 200,
-        headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin' :   tweakOrigin(origin),
-            'Access-Control-Allow-Credentials' : true, // Required for cookies, authorization headers with HT
-            'Access-Control-Allow-Headers' : "content-type"
-        },
-    };
-    return response;
-}
-
-function respondOK(origin, data, callback) {
-    const response = {
-        statusCode: 200,
-        body: JSON.stringify({ response: 'Login created', data: data }),
-        headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin' : tweakOrigin(origin),
-            'Access-Control-Allow-Credentials' : true, // Required for cookies, authorization headers with HT
-            'Access-Control-Allow-Headers' : "content-type"
-        },
-    };
-    return response;
-}
-
-function respondError(origin, errorCode, errorMessage, callback) {
-    const response = {
-        statusCode: errorCode,
-        body: JSON.stringify({ response: errorMessage }),
-        headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin' : tweakOrigin(origin),
-            'Access-Control-Allow-Credentials' : true, // Required for cookies, authorization headers with HT
-            'Access-Control-Allow-Headers' : "content-type"
-        },
-    };
-    return response;
-}
